@@ -41,6 +41,15 @@ contract DAO{
         _;
     }
 
+    function reset() private{
+        for(uint i = 0; i < voters.length; i++){
+            voted[voters[i]]  = false;
+        }
+        delete voters;
+        // return voted[0x5B38Da6a701c568545dCfcB03FcB875f56beddC4];
+    }
+
+
     function makeProposal(string memory desc) public {
         require(stakeholders[msg.sender] == true,
                  "Not a member");
@@ -62,7 +71,7 @@ contract DAO{
         proposal.vote_yes++;
         proposal.total_votes++;
         voted[msg.sender] = true;
-        // delete voters;
+        voters.push(msg.sender);
     }
 
     function voteNo() external checkVoted{
@@ -71,10 +80,12 @@ contract DAO{
         proposal.vote_no++;
         proposal.total_votes++;
         voted[msg.sender] = true;
+        voters.push(msg.sender);
     }
 
-    function finalizeProposal() external view checkRequirements returns(bool){
+    function finalizeProposal() external checkRequirements returns(bool){
         uint vote_percentage = (proposal.vote_yes / proposal.total_votes) * 100;
+        reset();
         if ( vote_percentage > 50){
             return true;
         }    
@@ -85,9 +96,8 @@ contract DAO{
         // add an event here
 
         // reset state
+        
     }
-
-
 
     // function addvote() public{
         // voters.push(0x5B38Da6a701c568545dCfcB03FcB875f56beddC4);
