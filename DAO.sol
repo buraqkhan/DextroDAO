@@ -1,6 +1,10 @@
 //SPDX-License-Identifier: <SPDX-License> 
 pragma solidity ^0.8.1;
 
+interface TokenInterface {
+    function checkOwners(address addr) external returns (bool);
+}
+
 contract DAO{
     
     struct Proposal {
@@ -13,6 +17,8 @@ contract DAO{
         bool completed;
     }
 
+    TokenInterface DexToken;
+    address owner_address;
     uint vote_duration = 3 days;
     uint proposal_cd = 7 days;
     mapping (address => bool) voted;
@@ -21,10 +27,9 @@ contract DAO{
     uint public stakeholder_num;
     Proposal public proposal;
 
-    constructor()  {
-        stakeholders[0x5B38Da6a701c568545dCfcB03FcB875f56beddC4] = true;
-        stakeholders[0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2] = true;
-        stakeholder_num = 2;
+    constructor(address addr)  {
+        owner_address = msg.sender;
+        setTokenInterface(addr);
     }
 
     modifier checkVoted() {
@@ -41,6 +46,11 @@ contract DAO{
         _;
     }
 
+    function setTokenInterface(address addr) public {
+        require(msg.sender == owner_address);
+        DexToken = TokenInterface(addr);
+    }
+
     function reset() private{
         for(uint i = 0; i < voters.length; i++){
             voted[voters[i]]  = false;
@@ -51,7 +61,7 @@ contract DAO{
 
 
     function makeProposal(string memory desc) public {
-        require(stakeholders[msg.sender] == true,
+        require(DexToken.checkOwners(msg.sender) == true,
                  "Not a member");
         Proposal memory new_prop = Proposal({
             desc: desc,
@@ -84,6 +94,7 @@ contract DAO{
     }
 
     function finalizeProposal() external checkRequirements returns(bool){
+        proposal.completed = true;
         uint vote_percentage = (proposal.vote_yes / proposal.total_votes) * 100;
         reset();
         if ( vote_percentage > 50){
