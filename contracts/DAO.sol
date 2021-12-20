@@ -2,11 +2,14 @@
 pragma solidity ^0.8.1;
 
 interface TokenInterface {
-    function checkOwners(address addr) external returns (bool);
+    function checkStakeholder(address addr) external returns (bool);
+    function stakeholderCount() external returns (uint256);
 }
 
 contract DAO{
     
+    event concludeVoting(bool decision, string proposal_desc);
+
     struct Proposal {
         string desc;
         address from;
@@ -22,14 +25,13 @@ contract DAO{
     uint vote_duration = 3 days;
     uint proposal_cd = 7 days;
     mapping (address => bool) voted;
-    mapping (address => bool) stakeholders;
     address[] public voters;
-    uint public stakeholder_num;
     Proposal public proposal;
 
     constructor(address addr)  {
         owner_address = msg.sender;
         setTokenInterface(addr);
+        proposal.completed = true;
     }
 
     modifier checkVoted() {
@@ -41,7 +43,7 @@ contract DAO{
     modifier checkRequirements() {
         require(msg.sender == proposal.from,
             "Can only be approved by proposal maker");
-        require(block.timestamp > (proposal.inception_time + 3 days) || proposal.total_votes == stakeholder_num,
+        require(block.timestamp > (proposal.inception_time + vote_duration) || proposal.total_votes == DexToken.stakeholderCount(),
                 "3 days haven't passed and everyone hasn't voted yet");
         _;
     }
@@ -56,13 +58,14 @@ contract DAO{
             voted[voters[i]]  = false;
         }
         delete voters;
-        // return voted[0x5B38Da6a701c568545dCfcB03FcB875f56beddC4];
     }
 
 
     function makeProposal(string memory desc) public {
-        require(DexToken.checkOwners(msg.sender) == true,
+        require(DexToken.checkStakeholder(msg.sender) == true,
                  "Not a member");
+        require(proposal.completed == true,
+                "Cannot make new proposal when voting ongoing");
         Proposal memory new_prop = Proposal({
             desc: desc,
             from: msg.sender,
@@ -76,8 +79,8 @@ contract DAO{
     }
 
     function voteYes() external checkVoted{
-        require(stakeholders[msg.sender] == true,
-            "Not a member");
+        require(DexToken.checkStakeholder(msg.sender) == true,
+                 "Not a member");
         proposal.vote_yes++;
         proposal.total_votes++;
         voted[msg.sender] = true;
@@ -85,8 +88,8 @@ contract DAO{
     }
 
     function voteNo() external checkVoted{
-        require(stakeholders[msg.sender] == true,
-                "Not a member");        
+        require(DexToken.checkStakeholder(msg.sender) == true,
+                "Not a member");
         proposal.vote_no++;
         proposal.total_votes++;
         voted[msg.sender] = true;
@@ -98,19 +101,11 @@ contract DAO{
         uint vote_percentage = (proposal.vote_yes / proposal.total_votes) * 100;
         reset();
         if ( vote_percentage > 50){
+            // emit concludeVoting(true, proposal.desc);
             return true;
         }    
+        // emit concludeVoting(false, proposal.desc);
         return false;
-        // else {
-            // add event
-        // }
-        // add an event here
-
-        // reset state
-        
     }
 
-    // function addvote() public{
-        // voters.push(0x5B38Da6a701c568545dCfcB03FcB875f56beddC4);
-    // }
 }

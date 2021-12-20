@@ -21,7 +21,7 @@ contract DextToken is IERC20 {
 
     uint256 totalSupply_;
 
-    uint256 public owner_count = 0;
+    uint256 stakeholder_count = 1;
 
     constructor(uint256 total) {
         totalSupply_ = total;
@@ -33,6 +33,10 @@ contract DextToken is IERC20 {
     function totalSupply() public override view returns (uint256) {
         return totalSupply_;
     }
+
+    function stakeholderCount() public view returns(uint256) {
+        return stakeholder_count;
+    } 
 
     function balanceOf(address tokenOwner) public override view returns (uint256) {
         return balances[tokenOwner];
@@ -71,10 +75,10 @@ contract DextToken is IERC20 {
         require(msg.value == 1 ether);
         transfer(msg.sender, 1);
         owners[msg.sender] = true;
-        owner_count++;
+        stakeholder_count++;
     }
 
-    function checkOwners(address addr) public view returns (bool) {
+    function checkStakeholder(address addr) public view returns (bool) {
         return owners[addr];
     }
 }
