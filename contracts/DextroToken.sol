@@ -11,6 +11,8 @@ contract DextToken is IERC20 {
     // event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
     // event Transfer(address indexed from, address indexed to, uint value);
 
+    address public contract_owner;
+
     mapping(address => bool) owners;
 
     mapping(address => uint256) balances;
@@ -19,9 +21,13 @@ contract DextToken is IERC20 {
 
     uint256 totalSupply_;
 
+    uint256 public owner_count = 0;
+
     constructor(uint256 total) {
         totalSupply_ = total;
         balances[msg.sender] = totalSupply_;
+        contract_owner = msg.sender;
+        owners[msg.sender] = true;
     }
 
     function totalSupply() public override view returns (uint256) {
@@ -33,8 +39,8 @@ contract DextToken is IERC20 {
     }
 
     function transfer(address receiver, uint256 numTokens) public override returns (bool) {
-        require(numTokens <= balances[msg.sender]);
-        balances[msg.sender] = balances[msg.sender] - numTokens;
+        require(numTokens <= balances[contract_owner]);
+        balances[contract_owner] = balances[contract_owner] - numTokens;
         balances[receiver] = balances[receiver] + numTokens;
         emit Transfer(msg.sender, receiver, numTokens);
         return true;
@@ -63,8 +69,9 @@ contract DextToken is IERC20 {
 
     function buyTokens() external payable {
         require(msg.value == 1 ether);
-        // add event here?
+        transfer(msg.sender, 1);
         owners[msg.sender] = true;
+        owner_count++;
     }
 
     function checkOwners(address addr) public view returns (bool) {
